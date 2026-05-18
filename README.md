@@ -1,3 +1,7 @@
+# Not maintained
+
+This project is not maintaned anymore. It is not recommended to use this project in production.
+
 # What is Kong OIDC plugin
 
 [![Join the chat at https://gitter.im/nokia/kong-oidc](https://badges.gitter.im/nokia/kong-oidc.svg)](https://gitter.im/nokia/kong-oidc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
