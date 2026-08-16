@@ -1,6 +1,6 @@
-# Not maintained
+# Kong OIDC plugin
 
-This project is not maintaned anymore. It is not recommended to use this project in production.
+Maintained fork for Kong Gateway 3.x and 4.x. Uses `lua-resty-openidc 1.9.x` and Kong's bundled `lua-resty-session >= 4.0.3`.
 
 # What is Kong OIDC plugin
 
@@ -54,7 +54,8 @@ ngx.ctx.authenticated_consumer = {
 
 **kong-oidc** depends on the following package:
 
-- [`lua-resty-openidc`](https://github.com/pingidentity/lua-resty-openidc/)
+- [`lua-resty-openidc` 1.9.x](https://github.com/zmartzone/lua-resty-openidc/)
+- Kong's bundled `lua-resty-session >= 4.0.3`
 
 
 ## Installation
