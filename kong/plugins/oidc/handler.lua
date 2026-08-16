@@ -4,7 +4,7 @@ local session = require("kong.plugins.oidc.session")
 
 local OidcHandler = {
   PRIORITY = 1000,
-  VERSION = "1.2.0",
+  VERSION = "1.3.1",
 }
 
 local function introspect(oidcConfig)
@@ -36,11 +36,24 @@ local function make_oidc(oidcConfig)
   return res
 end
 
+local function verify_email_whitelist(oidcConfig, user)
+  if not oidcConfig.email_whitelist or #oidcConfig.email_whitelist == 0 then
+    return true
+  end
+  local email = user and (user.email or user.preferred_username)
+  if not utils.is_email_allowed(email, oidcConfig.email_whitelist) then
+    kong.log.warn("OidcHandler: Forbidden email: ", email or "nil")
+    return utils.exit(403, { message = "Forbidden: email is not allowed" })
+  end
+  return true
+end
+
 local function handle(oidcConfig)
   local response
   if oidcConfig.introspection_endpoint then
     response = introspect(oidcConfig)
     if response then
+      verify_email_whitelist(oidcConfig, response)
       utils.injectUser(response)
     end
   end
@@ -49,6 +62,7 @@ local function handle(oidcConfig)
     response = make_oidc(oidcConfig)
     if response then
       if response.user then
+        verify_email_whitelist(oidcConfig, response.user)
         utils.injectUser(response.user)
       end
       if response.access_token then

@@ -58,6 +58,7 @@ function M.get_options(config, ngx)
     filters = parseFilters(config.filters),
     logout_path = config.logout_path,
     redirect_after_logout_uri = config.redirect_after_logout_uri,
+    email_whitelist = config.email_whitelist,
   }
 end
 
@@ -88,6 +89,22 @@ function M.has_bearer_access_token()
   if header and header:find(" ") then
     local divider = header:find(" ")
     if string.lower(header:sub(1, divider - 1)) == "bearer" then
+      return true
+    end
+  end
+  return false
+end
+
+function M.is_email_allowed(email, whitelist)
+  if not whitelist or #whitelist == 0 then
+    return true
+  end
+  if not email or email == "" then
+    return false
+  end
+  local lower_email = string.lower(email)
+  for _, item in ipairs(whitelist) do
+    if string.lower(item) == lower_email then
       return true
     end
   end
