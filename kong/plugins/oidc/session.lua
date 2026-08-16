@@ -11,7 +11,11 @@ function M.configure(config)
     return kong.response.exit(500, { message = "invalid OIDC plugin configuration, session secret could not be decoded" })
   end
 
-  return { secret = secret }
+  return {
+    secret = secret,
+    cookie_same_site = "None",
+    cookie_secure = true,
+  }
 end
 
 return M

@@ -4,7 +4,7 @@ local session = require("kong.plugins.oidc.session")
 
 local OidcHandler = {
   PRIORITY = 1000,
-  VERSION = "1.3.2",
+  VERSION = "1.3.3",
 }
 
 local function introspect(oidcConfig)
