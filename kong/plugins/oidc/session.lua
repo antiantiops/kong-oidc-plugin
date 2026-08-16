@@ -13,6 +13,7 @@ function M.configure(config)
 
   return {
     secret = secret,
+    audience = "kong-oidc",
     cookie_same_site = "None",
     cookie_secure = true,
   }
