@@ -58,16 +58,58 @@ ngx.ctx.authenticated_consumer = {
 - Kong's bundled `lua-resty-session >= 4.0.3`
 
 
-## Installation
+## Docker Compose installation
 
-If you're using `luarocks` execute the following:
+Use Kong Gateway image with bundled `lua-resty-session` v4. The init container installs OpenIDC `1.9.0` and this plugin into a shared read-only volume before Kong starts.
 
-     luarocks install kong-oidc
+```yaml
+services:
+  kong-plugin-init:
+    image: kong:3.8
+    user: root
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - |
+        rm -rf /plugins-volume/*
+        apt-get update -qq && apt-get install -y -qq curl git
+        luarocks install --tree=/plugins-volume --deps-mode=none \
+          https://luarocks.org/lua-resty-openidc-1.9.0-1.src.rock
+        luarocks install --tree=/plugins-volume --deps-mode=none \
+          --only-server=https://luarocks.org/manifests/mrnim94 kong-oidc-plugin
+    volumes:
+      - kong_plugins:/plugins-volume
 
-You also need to set the `KONG_PLUGINS` environment variable
+  kong:
+    image: kong:3.8
+    environment:
+      KONG_PLUGINS: bundled,oidc
+      KONG_LUA_PACKAGE_PATH: /opt/plugins/share/lua/5.1/?.lua;/opt/plugins/share/lua/5.1/?/init.lua;;
+      KONG_LUA_PACKAGE_CPATH: /opt/plugins/lib/lua/5.1/?.so;;
+    depends_on:
+      kong-plugin-init:
+        condition: service_completed_successfully
+    volumes:
+      - kong_plugins:/opt/plugins:ro
 
-     export KONG_PLUGINS=oidc
-     
+volumes:
+  kong_plugins:
+```
+
+Deploy or upgrade:
+
+```sh
+docker compose up -d --force-recreate kong-plugin-init
+docker compose up -d --force-recreate kong
+```
+
+Do not install `lua-resty-session` in `/plugins-volume`: OpenIDC `1.9.x` uses Kong's bundled session v4.
+
+## Configure OIDC
+
+Set `config.session_secret` to a stable base64-encoded random value. Changing it invalidates existing login cookies. For browser redirects, this plugin emits `SameSite=None; Secure`; use HTTPS.
+
 ## Usage
 
 ### Parameters
