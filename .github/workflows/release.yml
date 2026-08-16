@@ -26,6 +26,6 @@ jobs:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API }}
         run: |
           API_KEY="${LUAROCKS_API_KEY:-${{ secrets.LUAROCKS_API_KEY }}}"
-          ROCKSPEC=$(ls -1 kong-oidc-*.rockspec | head -n 1)
+          ROCKSPEC=$(ls -1 kong-plugin-oidc-ce-*.rockspec *.rockspec 2>/dev/null | head -n 1)
           echo "Uploading $ROCKSPEC to LuaRocks..."
           luarocks upload "$ROCKSPEC" --api-key="$API_KEY"
