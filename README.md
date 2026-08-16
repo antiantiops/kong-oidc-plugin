@@ -60,10 +60,37 @@ ngx.ctx.authenticated_consumer = {
 
 ## Docker Compose installation
 
-Use Kong Gateway image with bundled `lua-resty-session` v4. The init container installs OpenIDC `1.9.0` and this plugin into a shared read-only volume before Kong starts.
+Use Kong Gateway image with bundled `lua-resty-session` v4. This complete database-backed example includes PostgreSQL, a one-time migration job, plugin init container, and Kong. The init container installs OpenIDC `1.9.0` and this plugin into a shared read-only volume before Kong starts.
 
 ```yaml
 services:
+  kong-database:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: kong
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+
+  kong-migrations:
+    image: kong:3.8
+    command: kong migrations bootstrap
+    environment: &kong-env
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: change-me
+      KONG_PG_DATABASE: kong
+    depends_on:
+      kong-database:
+        condition: service_healthy
+
   kong-plugin-init:
     image: kong:3.8
     user: root
@@ -84,10 +111,13 @@ services:
   kong:
     image: kong:3.8
     environment:
+      <<: *kong-env
       KONG_PLUGINS: bundled,oidc
       KONG_LUA_PACKAGE_PATH: /opt/plugins/share/lua/5.1/?.lua;/opt/plugins/share/lua/5.1/?/init.lua;;
       KONG_LUA_PACKAGE_CPATH: /opt/plugins/lib/lua/5.1/?.so;;
     depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
       kong-plugin-init:
         condition: service_completed_successfully
     volumes:
@@ -95,9 +125,17 @@ services:
 
 volumes:
   kong_plugins:
+  kong_data:
 ```
 
-Deploy or upgrade:
+For a new PostgreSQL database, bootstrap Kong once:
+
+```sh
+docker compose up -d kong-database
+docker compose run --rm kong-migrations
+```
+
+After bootstrap, remove `kong-migrations` from `kong.depends_on` (or change it to `kong migrations up` for upgrades). Then deploy or upgrade Kong/plugin:
 
 ```sh
 docker compose up -d --force-recreate kong-plugin-init
