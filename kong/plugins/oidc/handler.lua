@@ -4,7 +4,7 @@ local session = require("kong.plugins.oidc.session")
 
 local OidcHandler = {
   PRIORITY = 1000,
-  VERSION = "1.3.8",
+  VERSION = "1.3.9",
 }
 
 local function introspect(oidcConfig)
@@ -27,7 +27,13 @@ local function make_oidc(oidcConfig, sessionOpts)
   kong.log.debug("OidcHandler calling authenticate, requested path: ", ngx.var.request_uri)
   if ngx.var.uri == oidcConfig.redirect_uri_path then
     local probe, probeErr = require("resty.session").open(sessionOpts)
-    kong.log.warn("OidcHandler callback session probe: cookie=", ngx.var.cookie_session and "present" or "missing", ", present=", probe and tostring(probe.present) or "nil", ", error=", probeErr or "none")
+    local audiences = {}
+    if probe and probe.data then
+      for i, item in ipairs(probe.data) do
+        audiences[i] = tostring(item[2])
+      end
+    end
+    kong.log.warn("OidcHandler callback session probe: cookie=", ngx.var.cookie_session and "present" or "missing", ", present=", probe and tostring(probe.present) or "nil", ", error=", probeErr or "none", ", audiences=", table.concat(audiences, ","))
   end
   local res, err = require("resty.openidc").authenticate(oidcConfig, nil, nil, sessionOpts)
   if err then
