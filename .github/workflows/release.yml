@@ -1,10 +1,13 @@
-name: Release to Luarocks
+name: Release
 
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -21,6 +24,13 @@ jobs:
       - name: Setup Luarocks
         uses: leafo/gh-actions-luarocks@v5
 
+      - name: Build Rock Package
+        run: |
+          ROCKSPEC=$(ls -1 kong-plugin-oidc-ce-*.rockspec *.rockspec 2>/dev/null | head -n 1)
+          echo "Building rock package for $ROCKSPEC..."
+          luarocks pack "$ROCKSPEC"
+          ls -la *.rock
+
       - name: Upload to LuaRocks
         env:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API }}
@@ -28,4 +38,13 @@ jobs:
           API_KEY="${LUAROCKS_API_KEY:-${{ secrets.LUAROCKS_API_KEY }}}"
           ROCKSPEC=$(ls -1 kong-plugin-oidc-ce-*.rockspec *.rockspec 2>/dev/null | head -n 1)
           echo "Uploading $ROCKSPEC to LuaRocks..."
-          luarocks upload "$ROCKSPEC" --api-key="$API_KEY"
+          luarocks upload "$ROCKSPEC" --api-key="$API_KEY" --force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            *.rock
+            *.rockspec
+          generate_release_notes: true
