@@ -1,8 +1,8 @@
 package = "kong-oidc-plugin"
-version = "1.3.5-0"
+version = "1.3.6-0"
 source = {
     url = "git+https://github.com/antiantiops/kong-oidc-plugin.git",
-    tag = "v1.3.5"
+    tag = "v1.3.6"
 }
 description = {
     summary = "A Kong plugin for implementing OpenID Connect Relying Party (RP) functionality for Kong CE / 3.x / 4.x",
