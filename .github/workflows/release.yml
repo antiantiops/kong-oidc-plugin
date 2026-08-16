@@ -1,0 +1,31 @@
+name: Release to Luarocks
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Lua / LuaJIT and Luarocks
+        uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "5.1"
+
+      - name: Setup Luarocks
+        uses: leafo/gh-actions-luarocks@v5
+
+      - name: Upload to LuaRocks
+        env:
+          LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API }}
+        run: |
+          API_KEY="${LUAROCKS_API_KEY:-${{ secrets.LUAROCKS_API_KEY }}}"
+          ROCKSPEC=$(ls -1 kong-oidc-*.rockspec | head -n 1)
+          echo "Uploading $ROCKSPEC to LuaRocks..."
+          luarocks upload "$ROCKSPEC" --api-key="$API_KEY"
