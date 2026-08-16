@@ -1,10 +1,12 @@
 local M = {}
 
 local function shouldIgnoreRequest(patterns)
-  if (patterns) then
+  if patterns then
+    local uri = kong.request.get_path()
     for _, pattern in ipairs(patterns) do
-      local isMatching = not (string.find(ngx.var.uri, pattern) == nil)
-      if (isMatching) then return true end
+      if string.find(uri, pattern) then
+        return true
+      end
     end
   end
   return false

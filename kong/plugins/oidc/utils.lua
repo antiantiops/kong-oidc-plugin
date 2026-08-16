@@ -4,7 +4,7 @@ local M = {}
 
 local function parseFilters(csvFilters)
   local filters = {}
-  if (not (csvFilters == nil)) then
+  if csvFilters then
     for pattern in string.gmatch(csvFilters, "[^,]+") do
       table.insert(filters, pattern)
     end
@@ -24,7 +24,7 @@ function M.get_redirect_uri_path(ngx)
   end
 
   local function tackle_slash(path)
-    local args = ngx.req.get_uri_args()
+    local args = kong.request.get_query()
     if args and args.code then
       return path
     elseif path == "/" then
@@ -61,19 +61,17 @@ function M.get_options(config, ngx)
   }
 end
 
-function M.exit(httpStatusCode, message, ngxCode)
-  ngx.status = httpStatusCode
-  ngx.say(message)
-  ngx.exit(ngxCode)
+function M.exit(httpStatusCode, message)
+  kong.response.exit(httpStatusCode, message)
 end
 
 function M.injectAccessToken(accessToken)
-  ngx.req.set_header("X-Access-Token", accessToken)
+  kong.service.request.set_header("X-Access-Token", accessToken)
 end
 
 function M.injectIDToken(idToken)
   local tokenStr = cjson.encode(idToken)
-  ngx.req.set_header("X-ID-Token", ngx.encode_base64(tokenStr))
+  kong.service.request.set_header("X-ID-Token", ngx.encode_base64(tokenStr))
 end
 
 function M.injectUser(user)
@@ -82,14 +80,14 @@ function M.injectUser(user)
   tmp_user.username = user.preferred_username
   ngx.ctx.authenticated_credential = tmp_user
   local userinfo = cjson.encode(user)
-  ngx.req.set_header("X-Userinfo", ngx.encode_base64(userinfo))
+  kong.service.request.set_header("X-Userinfo", ngx.encode_base64(userinfo))
 end
 
 function M.has_bearer_access_token()
-  local header = ngx.req.get_headers()['Authorization']
+  local header = kong.request.get_header("Authorization")
   if header and header:find(" ") then
-    local divider = header:find(' ')
-    if string.lower(header:sub(0, divider-1)) == string.lower("Bearer") then
+    local divider = header:find(" ")
+    if string.lower(header:sub(1, divider - 1)) == "bearer" then
       return true
     end
   end
