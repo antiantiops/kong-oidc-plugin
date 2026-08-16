@@ -4,7 +4,7 @@ local session = require("kong.plugins.oidc.session")
 
 local OidcHandler = {
   PRIORITY = 1000,
-  VERSION = "1.3.3",
+  VERSION = "1.3.4",
 }
 
 local function introspect(oidcConfig)
@@ -25,7 +25,11 @@ end
 
 local function make_oidc(oidcConfig, sessionOpts)
   kong.log.debug("OidcHandler calling authenticate, requested path: ", ngx.var.request_uri)
-  local res, err = require("resty.openidc").authenticate(oidcConfig, nil, nil, sessionOpts)
+  local oidcSession, sessionErr = require("resty.session").start(sessionOpts)
+  if not oidcSession then
+    return utils.exit(500, { message = sessionErr or "could not start OIDC session" })
+  end
+  local res, err = require("resty.openidc").authenticate(oidcConfig, nil, nil, oidcSession)
   if err then
     if oidcConfig.recovery_page_path then
       kong.log.debug("Entering recovery page: ", oidcConfig.recovery_page_path)
